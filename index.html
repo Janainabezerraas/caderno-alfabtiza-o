@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Meu Caderninho de Palavras</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFDF6;
+    --line-blue:#B9D3EE;
+    --margin-red:#F2879C;
+    --ink:#3B3B3B;
+    --wood:#EADFC8;
+    --wood-dark:#D9C79E;
+    --accent-purple:#8E6FE0;
+    --shadow: 0 18px 40px rgba(90,70,40,.18);
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; min-height:100vh;
+    font-family:'Baloo 2', sans-serif;
+    background:
+      radial-gradient(circle at 20% 10%, #fff6df 0%, transparent 45%),
+      radial-gradient(circle at 90% 90%, #d9f2e6 0%, transparent 40%),
+      linear-gradient(180deg, var(--wood) 0%, var(--wood-dark) 100%);
+    color:var(--ink);
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:24px 12px 60px;
+  }
+
+  .desk-title{
+    position:absolute;
+    top:14px; left:50%; transform:translateX(-50%);
+    font-family:'Baloo 2', sans-serif;
+    font-weight:800;
+    font-size:15px;
+    letter-spacing:.5px;
+    color:#6b5636;
+    opacity:.75;
+  }
+
+  .caderno{
+    position:relative;
+    width:100%;
+    max-width:720px;
+    margin-top:44px;
+    background:var(--paper);
+    border-radius:14px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    background-image:
+      repeating-linear-gradient(
+        to bottom,
+        transparent 0px, transparent 43px,
+        var(--line-blue) 43px, var(--line-blue) 45px
+      );
+    background-position: 0 130px;
+  }
+
+  /* espiral do caderno na lateral esquerda */
+  .spiral{
+    position:absolute;
+    left:8px; top:0; bottom:0;
+    width:34px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-evenly;
+    align-items:center;
+    z-index:3;
+    pointer-events:none;
+  }
+  .spiral span{
+    width:16px; height:16px; border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #fff, #cfc7b3 60%, #b7ad95 100%);
+    box-shadow: inset 0 2px 3px rgba(0,0,0,.25);
+  }
+  .margin-line{
+    position:absolute;
+    top:0; bottom:0; left:64px;
+    width:2px;
+    background:var(--margin-red);
+    opacity:.55;
+    z-index:2;
+  }
+
+  .conteudo{
+    position:relative;
+    z-index:4;
+    padding: 28px 30px 34px 84px;
+  }
+
+  /* cabecalho de progresso */
+  .progresso{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+  }
+  .palavras-trilha{
+    display:flex; gap:6px; flex-wrap:wrap;
+    max-width:70%;
+  }
+  .bolinha-palavra{
+    width:13px;height:13px;border-radius:50%;
+    border:2px solid rgba(0,0,0,.15);
+    background:#fff;
+    transition:transform .25s ease;
+  }
+  .bolinha-palavra.atual{ transform:scale(1.35); border-color:rgba(0,0,0,.3); }
+  .bolinha-palavra.feita{ opacity:.55; }
+
+  .etapas-trilha{
+    display:flex; gap:6px;
+  }
+  .etapa-marca{
+    font-size:18px;
+    opacity:.25;
+    transition:opacity .25s ease, transform .25s ease;
+  }
+  .etapa-marca.ativa{ opacity:1; transform:translateY(-2px); }
+  .etapa-marca.feita{ opacity:.6; }
+
+  .contador-fase{
+    text-align:center;
+    font-size:.78rem;
+    font-weight:700;
+    color:#9a8a6a;
+    margin-bottom:6px;
+  }
+
+  .stage{
+    animation: entra .45s ease;
+  }
+  @keyframes entra{
+    from{ opacity:0; transform:translateY(10px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+
+  .instrucao{
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    font-size:1.05rem;
+    color:#5a4a2f;
+    margin: 0 0 14px;
+    text-align:center;
+  }
+
+  .palavra-grande{
+    font-family:'Patrick Hand', cursive;
+    font-size:min(18vw, 92px);
+    line-height:1;
+    text-align:center;
+    margin: 10px 0 18px;
+    letter-spacing:2px;
+    text-shadow: 2px 2px 0 rgba(0,0,0,.06);
+    user-select:none;
+  }
+
+  .ouvir-btn{
+    display:inline-flex; align-items:center; gap:8px;
+    background:#fff;
+    border:2px solid rgba(0,0,0,.12);
+    border-radius:999px;
+    padding:8px 16px;
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    font-size:.95rem;
+    cursor:pointer;
+    box-shadow:0 3px 0 rgba(0,0,0,.08);
+    color:var(--ink);
+    transition:transform .12s ease;
+  }
+  .ouvir-btn:active{ transform:translateY(2px); box-shadow:none; }
+
+  .linha-central{
+    display:flex; justify-content:center; margin-bottom:22px;
+  }
+
+  .campo-digitar{
+    width:100%;
+    max-width:420px;
+    display:block;
+    margin: 4px auto 8px;
+    font-family:'Patrick Hand', cursive;
+    font-size:2rem;
+    text-align:center;
+    letter-spacing:6px;
+    text-transform:uppercase;
+    border:none;
+    border-bottom:3px dashed rgba(0,0,0,.25);
+    background:transparent;
+    padding:8px 4px;
+    outline:none;
+    color:var(--ink);
+  }
+  .campo-digitar.certo{ color:#2e9e5b; border-bottom-color:#2e9e5b; }
+
+  .feedback{
+    text-align:center;
+    min-height:34px;
+    font-weight:800;
+    font-size:1.1rem;
+    color:#2e9e5b;
+  }
+
+  .botoes{
+    display:flex; justify-content:center; gap:12px; margin-top:16px; flex-wrap:wrap;
+  }
+
+  .btn{
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    font-size:1rem;
+    border:none;
+    border-radius:14px;
+    padding:12px 26px;
+    cursor:pointer;
+    color:#fff;
+    box-shadow:0 4px 0 rgba(0,0,0,.15);
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .btn:active{ transform:translateY(3px); box-shadow:none; }
+  .btn.primario{ background:var(--accent-purple); }
+  .btn.secundario{ background:#8fb3d9; }
+  .btn.suave{ background:#e3dccb; color:#5a4a2f; box-shadow:0 4px 0 rgba(0,0,0,.08); }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; box-shadow:none; }
+
+  .link-pular{
+    display:block;
+    text-align:center;
+    margin-top:10px;
+    font-size:.8rem;
+    color:#9a8a6a;
+    cursor:pointer;
+    text-decoration:underline;
+  }
+
+  .desenho-box{
+    display:flex; justify-content:center; margin: 6px 0 18px;
+  }
+  .desenho-box svg{ width:min(70vw, 260px); height:auto; filter:drop-shadow(0 6px 10px rgba(0,0,0,.12)); }
+
+  .stage-canvas{
+    display:flex; flex-direction:column; align-items:center; gap:14px;
+  }
+  .quadro{
+    position:relative;
+    width:min(86vw, 360px);
+    height:min(86vw, 360px);
+    background:#fff;
+    border-radius:16px;
+    border:3px solid #e4dcc8;
+    box-shadow: inset 0 0 0 8px #fffef9;
+    overflow:hidden;
+  }
+  .quadro svg.guia{
+    position:absolute; inset:0; width:100%; height:100%;
+    pointer-events:none;
+    z-index:2;
+  }
+  .quadro canvas{
+    position:absolute; inset:0; width:100%; height:100%;
+    cursor:crosshair;
+    z-index:1;
+  }
+
+  .paleta{
+    display:flex; gap:8px; flex-wrap:wrap; justify-content:center; max-width:360px;
+  }
+  .cor{
+    width:30px; height:30px; border-radius:50%;
+    border:3px solid #fff;
+    box-shadow:0 0 0 2px rgba(0,0,0,.15);
+    cursor:pointer;
+  }
+  .cor.selecionada{ box-shadow:0 0 0 3px #333; transform:scale(1.15); }
+
+  .ferramentas{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center;
+  }
+
+  .final{
+    text-align:center;
+    padding: 30px 10px;
+  }
+  .final h2{
+    font-family:'Patrick Hand', cursive;
+    font-size:2.4rem;
+    color:var(--accent-purple);
+    margin-bottom:6px;
+  }
+  .confete{
+    font-size:2.4rem;
+    margin:10px 0;
+  }
+
+  @media (max-width:480px){
+    .conteudo{ padding: 22px 14px 26px 58px; }
+    .margin-line{ left:44px; }
+    .spiral{ width:24px; }
+    .spiral span{ width:11px; height:11px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="desk-title">📓 Meu Caderninho de Palavras</div>
+
+<div class="caderno">
+  <div class="spiral" id="spiral"></div>
+  <div class="margin-line"></div>
+  <div class="conteudo">
+
+    <div class="contador-fase" id="contadorFase"></div>
+    <div class="progresso">
+      <div class="palavras-trilha" id="trilhaPalavras"></div>
+      <div class="etapas-trilha" id="trilhaEtapas">
+        <span class="etapa-marca" data-etapa="0">✏️</span>
+        <span class="etapa-marca" data-etapa="1">🖼️</span>
+        <span class="etapa-marca" data-etapa="2">🎨</span>
+      </div>
+    </div>
+
+    <div id="stage" class="stage"></div>
+
+  </div>
+</div>
+
+<script>
+/* ===================== DADOS DAS PALAVRAS ===================== */
+
+function outlineWrap(inner){
+  return `<svg class="guia" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
+}
+
+const PALAVRAS = [
+  {
+    id:'sol', texto:'SOL', cor:'#F5A623',
+    colorida: outlineWrap(`
+      <circle cx="150" cy="150" r="55" fill="#FFC94D" stroke="#3B3B3B" stroke-width="6"/>
+      <g stroke="#F5A623" stroke-width="10" stroke-linecap="round">
+        <line x1="150" y1="55" x2="150" y2="25"/>
+        <line x1="150" y1="245" x2="150" y2="275"/>
+        <line x1="55" y1="150" x2="25" y2="150"/>
+        <line x1="245" y1="150" x2="275" y2="150"/>
+        <line x1="83" y1="83" x2="62" y2="62"/>
+        <line x1="217" y1="83" x2="238" y2="62"/>
+        <line x1="83" y1="217" x2="62" y2="238"/>
+        <line x1="217" y1="217" x2="238" y2="238"/>
+      </g>
+      <circle cx="132" cy="140" r="6" fill="#3B3B3B"/>
+      <circle cx="168" cy="140" r="6" fill="#3B3B3B"/>
+      <path d="M128 168 Q150 188 172 168" stroke="#3B3B3B" stroke-width="6" fill="none" stroke-linecap="round"/>
+    `),
+    linha: outlineWrap(`
+      <circle cx="150" cy="150" r="55" fill="none" stroke="#3B3B3B" stroke-width="6"/>
+      <g stroke="#3B3B3B" stroke-width="8" stroke-linecap="round">
+        <line x1="150" y1="55" x2="150" y2="25"/>
+        <line x1="150" y1="245" x2="150" y2="275"/>
+        <line x1="55" y1="150" x2="25" y2="150"/>
+        <line x1="245" y1="150" x2="275" y2="150"/>
+        <line x1="83" y1="83" x2="62" y2="62"/>
+        <line x1="217" y1="83" x2="238" y2="62"/>
+        <line x1="83" y1="217" x2="62" y2="238"/>
+        <line x1="217" y1="217" x2="238" y2="238"/>
+      </g>
+    `)
+  },
+  {
+    id:'gato', texto:'GATO', cor:'#B5794A',
+    colorida: outlineWrap(`
+      <path d="M95 130 L70 60 L130 100 Z" fill="#E3B27F" stroke="#3B3B3B" stroke-width="6"/>
+      <path d="M205 130 L230 60 L170 100 Z" fill="#E3B27F" stroke="#3B3B3B" stroke-width="6"/>
+      <ellipse cx="150" cy="175" rx="85" ry="75" fill="#E3B27F" stroke="#3B3B3B" stroke-width="6"/>
+      <circle cx="118" cy="165" r="10" fill="#3B3B3B"/>
+      <circle cx="182" cy="165" r="10" fill="#3B3B3B"/>
+      <path d="M150 185 L138 200 L162 200 Z" fill="#F28C8C" stroke="#3B3B3B" stroke-width="4"/>
+      <path d="M150 200 Q150 212 135 214" stroke="#3B3B3B" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M150 200 Q150 212 165 214" stroke="#3B3B3B" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <g stroke="#3B3B3B" stroke-width="4" stroke-linecap="round">
+        <line x1="70" y1="185" x2="20" y2="178"/>
+        <line x1="70" y1="198" x2="20" y2="200"/>
+        <line x1="230" y1="185" x2="280" y2="178"/>
+        <line x1="230" y1="198" x2="280" y2="200"/>
+      </g>
+    `),
+    linha: outlineWrap(`
+      <path d="M95 130 L70 60 L130 100 Z" fill="none" stroke="#3B3B3B" stroke-width="6"/>
+      <path d="M205 130 L230 60 L170 100 Z" fill="none" stroke="#3B3B3B" stroke-width="6"/>
+      <ellipse cx="150" cy="175" rx="85" ry="75" fill="none" stroke="#3B3B3B" stroke-width="6"/>
+      <path d="M150 185 L138 200 L162 200 Z" fill="none" stroke="#3B3B3B" stroke-width="4"/>
+      <g stroke="#3B3B3B" stroke-width="4" stroke-linecap="round">
+        <line x1="70" y1="185" x2="20" y2="178"/>
+        <line x1="70" y1="198" x2="20" y2="200"/>
+        <line x1="230" y1="185" x2="280" y2="178"/>
+        <line x1="230" y1="198" x2="280" y2="200"/>
+      </g>
+    `)
+  },
+  {
+    id:'casa', texto:'CASA', cor:'#4F8FE8',
+    colorida: outlineWrap(`
+      <rect x="70" y="150" width="160" height="110" fill="#FCE3A6" stroke="#3B3B3B" stroke-width="6"/>
+      <path d="M55 155 L150 75 L245 155 Z" fill="#E86A5D" stroke="#3B3B3B" stroke-width="6"/>
+      <rect x="200" y="90" width="18" height="40" fill="#C8836B" stroke="#3B3B3B" stroke-width="5"/>
+      <rect x="130" y="185" width="40" height="75" fill="#8B5E3C" stroke="#3B3B3B" stroke-width="5"/>
+      <circle cx="163" cy="222" r="3.5" fill="#3B3B3B"/>
+      <rect x="90" y="175" width="34" height="34" fill="#9AD1E8" stroke="#3B3B3B" stroke-width="5"/>
+      <rect x="176" y="175" width="34" height="34" fill="#9AD1E8" stroke="#3B3B3B" stroke-width="5"/>
+    `),
+    linha: outlineWrap(`
+      <rect x="70" y="150" width="160" height="110" fill="none" stroke="#3B3B3B" stroke-width="6"/>
+      <path d="M55 155 L150 75 L245 155 Z" fill="none" stroke="#3B3B3B" stroke-width="6"/>
+      <rect x="200" y="90" width="18" height="40" fill="none" stroke="#3B3B3B" stroke-width="5"/>
+      <rect x="130" y="185" width="40" height="75" fill="none" stroke="#3B3B3B" stroke-width="5"/>
+      <rect x="90" y="175" width="34" height="34" fill="none" stroke="#3B3B3B" stroke-width="5"/>
+      <rect x="176" y="175" width="34" height="34" fill="none" stroke="#3B3B3B" stroke-width="5"/>
+    `)
+  },
+  {
+    id:'flor', texto:'FLOR', cor:'#E85D9E',
+    colorida: outlineWrap(`
+      <line x1="150" y1="180" x2="150" y2="270" stroke="#4C9A5B" stroke-width="8" stroke-linecap="round"/>
+      <path d="M150 230 Q120 240 105 220" stroke="#4C9A5B" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <path d="M150 245 Q180 255 195 235" stroke="#4C9A5B" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <g fill="#F79ACB" stroke="#3B3B3B" stroke-width="5">
+        <ellipse cx="150" cy="118" rx="26" ry="38"/>
+        <ellipse cx="150" cy="118" rx="26" ry="38" transform="rotate(72 150 118)"/>
+        <ellipse cx="150" cy="118" rx="26" ry="38" transform="rotate(144 150 118)"/>
+        <ellipse cx="150" cy="118" rx="26" ry="38" transform="rotate(216 150 118)"/>
+        <ellipse cx="150" cy="118" rx="26" ry="38" transform="rotate(288 150 118)"/>
+      </g>
+      <circle cx="150" cy="150" r="22" fill="#FFD24C" stroke="#3B3B3B" stroke-width="5"/>
+    `),
+    linha: outlineWrap(`
+      <line x1="150" y1="180" x2="150" y2="270" stroke="#3B3B3B" stroke-width="6" stroke-linecap="round"/>
+      <path d="M150 230 Q120 240 105 220" stroke="#3B3B3B" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M150 245 Q180 255 195 235" stroke="#3B3B3B" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <g fill="none" stroke="#3B3B3B" stroke-width="5">
+        <ellipse cx="150" cy="118" rx="26" ry="38"/>
+        <ellipse cx="150" cy="118" rx="26" ry="38" transform="rotate(72 150 118)"/>
+        <ellipse cx="150" cy="118" rx="26" ry="38" transform="rotate(144 150 118)"/>
+        <ellipse cx="150" cy="118" rx="26" ry="38" transform="rotate(216 150 118)"/>
+        <ellipse cx="150" cy="118" rx="26" ry="38" transform="rotate(288 150 118)"/>
+      </g>
+      <circle cx="150" cy="150" r="22" fill="none" stroke="#3B3B3B" stroke-width="5"/>
+    `)
+  },
+  {
+    id:'peixe', texto:'PEIXE', cor:'#3FBFB2',
+    colorida: outlineWrap(`
+      <ellipse cx="140" cy="150" rx="85" ry="55" fill="#5FD6C8" stroke="#3B3B3B" stroke-width="6"/>
+      <path d="M215 150 L270 115 L270 185 Z" fill="#3FBFB2" stroke="#3B3B3B" stroke-width="6"/>
+      <circle cx="105" cy="135" r="8" fill="#3B3B3B"/>
+      <path d="M120 150 Q140 160 120 175" stroke="#3B3B3B" stroke-width="4" fill="none"/>
+      <path d="M150 195 Q140 215 160 225" stroke="#3B3B3B" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M175 195 Q170 213 188 220" stroke="#3B3B3B" stroke-width="5" fill="none" stroke-linecap="round"/>
+    `),
+    linha: outlineWrap(`
+      <ellipse cx="140" cy="150" rx="85" ry="55" fill="none" stroke="#3B3B3B" stroke-width="6"/>
+      <path d="M215 150 L270 115 L270 185 Z" fill="none" stroke="#3B3B3B" stroke-width="6"/>
+      <path d="M120 150 Q140 160 120 175" stroke="#3B3B3B" stroke-width="4" fill="none"/>
+    `)
+  },
+  {
+    id:'estrela', texto:'ESTRELA', cor:'#8E6FE0',
+    colorida: outlineWrap(`
+      <path d="M150 40 L172 118 L253 118 L188 165 L212 243 L150 195 L88 243 L112 165 L47 118 L128 118 Z"
+        fill="#F7D94C" stroke="#3B3B3B" stroke-width="6" stroke-linejoin="round"/>
+      <circle cx="122" cy="140" r="7" fill="#3B3B3B"/>
+      <circle cx="178" cy="140" r="7" fill="#3B3B3B"/>
+      <path d="M132 165 Q150 178 168 165" stroke="#3B3B3B" stroke-width="5" fill="none" stroke-linecap="round"/>
+    `),
+    linha: outlineWrap(`
+      <path d="M150 40 L172 118 L253 118 L188 165 L212 243 L150 195 L88 243 L112 165 L47 118 L128 118 Z"
+        fill="none" stroke="#3B3B3B" stroke-width="6" stroke-linejoin="round"/>
+    `)
+  },
+  {
+    id:'lua', texto:'LUA', cor:'#F4D35E',
+    colorida: outlineWrap(`
+      <path d="M170,40 a110,110 0 1,0 0,220 a85,85 0 1,1 0,-220 z" fill="#F4D35E" stroke="#3B3B3B" stroke-width="6" stroke-linejoin="round"/>
+      <g fill="#F7E9A0" stroke="#3B3B3B" stroke-width="3">
+        <path d="M60 70 l5 12 12 5 -12 5 -5 12 -5 -12 -12 -5 12 -5 z"/>
+        <path d="M235 190 l4 9 9 4 -9 4 -4 9 -4 -9 -9 -4 9 -4 z"/>
+      </g>
+    `),
+    linha: outlineWrap(`
+      <path d="M170,40 a110,110 0 1,0 0,220 a85,85 0 1,1 0,-220 z" fill="none" stroke="#3B3B3B" stroke-width="6" stroke-linejoin="round"/>
+      <g fill="none" stroke="#3B3B3B" stroke-width="3">
+        <path d="M60 70 l5 12 12 5 -12 5 -5 12 -5 -12 -12 -5 12 -5 z"/>
+        <path d="M235 190 l4 9 9 4 -9 4 -4 9 -4 -9 -9 -4 9 -4 z"/>
+      </g>
+    `)
+  },
+  {
+    id:'arvore', texto:'ÁRVORE', cor:'#4C9A5B',
+    colorida: outlineWrap(`
+      <rect x="134" y="185" width="32" height="90" fill="#8B5E3C" stroke="#3B3B3B" stroke-width="6"/>
+      <circle cx="150" cy="120" r="72" fill="#5CAE6C" stroke="#3B3B3B" stroke-width="6"/>
+      <circle cx="95" cy="150" r="46" fill="#4C9A5B" stroke="#3B3B3B" stroke-width="6"/>
+      <circle cx="205" cy="150" r="46" fill="#4C9A5B" stroke="#3B3B3B" stroke-width="6"/>
+    `),
+    linha: outlineWrap(`
+      <rect x="134" y="185" width="32" height="90" fill="none" stroke="#3B3B3B" stroke-width="6"/>
+      <circle cx="150" cy="120" r="72" fill="none" stroke="#3B3B3B" stroke-width="6"/>
+      <circle cx="95" cy="150" r="46" fill="none" stroke="#3B3B3B" stroke-width="6"/>
+      <circle cx="205" cy="150" r="46" fill="none" stroke="#3B3B3B" stroke-width="6"/>
+    `)
+  },
+  {
+    id:'bola', texto:'BOLA', cor:'#E85D5D',
+    colorida: outlineWrap(`
+      <g stroke="#3B3B3B" stroke-width="5" stroke-linejoin="round">
+        <path d="M150,150 L150,70 A80,80 0 0,1 219.28,110 Z" fill="#E85D5D"/>
+        <path d="M150,150 L219.28,110 A80,80 0 0,1 219.28,190 Z" fill="#F7D94C"/>
+        <path d="M150,150 L219.28,190 A80,80 0 0,1 150,230 Z" fill="#4C9A5B"/>
+        <path d="M150,150 L150,230 A80,80 0 0,1 80.72,190 Z" fill="#4F8FE8"/>
+        <path d="M150,150 L80.72,190 A80,80 0 0,1 80.72,110 Z" fill="#8E6FE0"/>
+        <path d="M150,150 L80.72,110 A80,80 0 0,1 150,70 Z" fill="#F5A623"/>
+      </g>
+      <circle cx="150" cy="150" r="80" fill="none" stroke="#3B3B3B" stroke-width="6"/>
+    `),
+    linha: outlineWrap(`
+      <circle cx="150" cy="150" r="80" fill="none" stroke="#3B3B3B" stroke-width="6"/>
+      <g stroke="#3B3B3B" stroke-width="4">
+        <line x1="150" y1="150" x2="150" y2="70"/>
+        <line x1="150" y1="150" x2="219.28" y2="110"/>
+        <line x1="150" y1="150" x2="219.28" y2="190"/>
+        <line x1="150" y1="150" x2="150" y2="230"/>
+        <line x1="150" y1="150" x2="80.72" y2="190"/>
+        <line x1="150" y1="150" x2="80.72" y2="110"/>
+      </g>
+    `)
+  },
+  {
+    id:'coracao', texto:'CORAÇÃO', cor:'#E85D9E',
+    colorida: outlineWrap(`
+      <path d="M150,235 C150,235 55,165 55,108 C55,75 82,55 110,55 C132,55 147,68 150,88 C153,68 168,55 190,55 C218,55 245,75 245,108 C245,165 150,235 150,235 Z"
+        fill="#F27DA8" stroke="#3B3B3B" stroke-width="6" stroke-linejoin="round"/>
+    `),
+    linha: outlineWrap(`
+      <path d="M150,235 C150,235 55,165 55,108 C55,75 82,55 110,55 C132,55 147,68 150,88 C153,68 168,55 190,55 C218,55 245,75 245,108 C245,165 150,235 150,235 Z"
+        fill="none" stroke="#3B3B3B" stroke-width="6" stroke-linejoin="round"/>
+    `)
+  }
+];
+
+const CORES_PALETA = ['#3B3B3B','#E85D5D','#F5A623','#F7D94C','#4C9A5B','#3FBFB2','#4F8FE8','#8E6FE0','#E85D9E','#B5794A'];
+
+/* ===================== ESTADO ===================== */
+let idxPalavra = 0;
+let idxEtapa = 0; // 0 copiar, 1 ver desenho, 2 colorir
+
+const stageEl = document.getElementById('stage');
+const trilhaPalavrasEl = document.getElementById('trilhaPalavras');
+const trilhaEtapasEl = document.getElementById('trilhaEtapas');
+const contadorFaseEl = document.getElementById('contadorFase');
+
+function montarSpiral(){
+  const spiral = document.getElementById('spiral');
+  spiral.innerHTML = '';
+  for(let i=0;i<10;i++){
+    const s = document.createElement('span');
+    spiral.appendChild(s);
+  }
+}
+montarSpiral();
+
+function removerAcentos(str){
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+
+function falar(texto){
+  if(!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(texto);
+  u.lang = 'pt-BR';
+  u.rate = 0.85;
+  const vozes = window.speechSynthesis.getVoices();
+  const vozPt = vozes.find(v => v.lang && v.lang.toLowerCase().startsWith('pt'));
+  if(vozPt) u.voice = vozPt;
+  window.speechSynthesis.speak(u);
+}
+
+function atualizarTrilhas(){
+  contadorFaseEl.textContent = `Fase ${idxPalavra + 1} de ${PALAVRAS.length}`;
+  trilhaPalavrasEl.innerHTML = '';
+  PALAVRAS.forEach((p,i)=>{
+    const b = document.createElement('span');
+    b.className = 'bolinha-palavra' + (i===idxPalavra ? ' atual':'') + (i<idxPalavra ? ' feita':'');
+    b.style.background = i<=idxPalavra ? p.cor : '#fff';
+    trilhaPalavrasEl.appendChild(b);
+  });
+  [...trilhaEtapasEl.children].forEach((el,i)=>{
+    el.classList.toggle('ativa', i===idxEtapa);
+    el.classList.toggle('feita', i<idxEtapa);
+  });
+}
+
+function irParaEtapa(n){
+  idxEtapa = n;
+  atualizarTrilhas();
+  renderizarEtapa();
+}
+
+function irParaProximaPalavra(){
+  if(idxPalavra < PALAVRAS.length - 1){
+    idxPalavra++;
+    idxEtapa = 0;
+    atualizarTrilhas();
+    renderizarEtapa();
+  } else {
+    renderizarFinal();
+  }
+}
+
+/* ===================== ETAPA 0 - COPIAR PALAVRA (TECLADO) ===================== */
+function renderCopiar(p){
+  stageEl.innerHTML = `
+    <div class="stage">
+      <p class="instrucao">Ouça a palavra e copie letra por letra no teclado:</p>
+      <div class="linha-central">
+        <button class="ouvir-btn" id="btnOuvir">🔊 Ouvir palavra</button>
+      </div>
+      <div class="palavra-grande" style="color:${p.cor}">${p.texto}</div>
+      <input type="text" class="campo-digitar" id="campoDigitar" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="digite aqui" maxlength="${p.texto.length}">
+      <div class="feedback" id="feedback"></div>
+      <div class="botoes">
+        <button class="btn primario" id="btnContinuar" disabled>Continuar ➜</button>
+      </div>
+      <span class="link-pular" id="linkPular">Pular esta etapa</span>
+    </div>
+  `;
+
+  document.getElementById('btnOuvir').onclick = () => falar(p.texto);
+  const campo = document.getElementById('campoDigitar');
+  const feedback = document.getElementById('feedback');
+  const btnContinuar = document.getElementById('btnContinuar');
+
+  campo.addEventListener('input', () => {
+    const digitado = removerAcentos(campo.value.toUpperCase());
+    const alvo = removerAcentos(p.texto);
+    if(digitado === alvo){
+      campo.classList.add('certo');
+      feedback.textContent = '✅ Muito bem! Você copiou certinho!';
+      btnContinuar.disabled = false;
+    } else {
+      campo.classList.remove('certo');
+      feedback.textContent = '';
+      btnContinuar.disabled = true;
+    }
+  });
+
+  btnContinuar.onclick = () => irParaEtapa(1);
+  document.getElementById('linkPular').onclick = () => irParaEtapa(1);
+
+  campo.focus();
+  setTimeout(()=> falar(p.texto), 350);
+}
+
+/* ===================== ETAPA 1 - VER DESENHO ===================== */
+function renderVerDesenho(p){
+  stageEl.innerHTML = `
+    <div class="stage">
+      <p class="instrucao">Olha só o que é <strong style="color:${p.cor}">${p.texto}</strong>!</p>
+      <div class="desenho-box">${p.colorida}</div>
+      <div class="botoes">
+        <button class="btn secundario" id="btnOuvir2">🔊 Ouvir de novo</button>
+        <button class="btn primario" id="btnContinuar">Ir pintar ➜</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('btnOuvir2').onclick = () => falar(p.texto);
+  document.getElementById('btnContinuar').onclick = () => irParaEtapa(2);
+}
+
+/* ===================== ETAPA 2 - COLORIR (SOMENTE MOUSE) ===================== */
+function renderColorir(p){
+  stageEl.innerHTML = `
+    <div class="stage stage-canvas">
+      <p class="instrucao">Capriche e colora: <strong style="color:${p.cor}">${p.texto}</strong></p>
+    </div>
+  `;
+  const stageCanvas = stageEl.querySelector('.stage-canvas');
+
+  const quadroWrapper = document.createElement('div');
+  quadroWrapper.className = 'quadro';
+
+  const canvas = document.createElement('canvas');
+  const guiaDiv = document.createElement('div');
+  guiaDiv.innerHTML = p.linha;
+  const guia = guiaDiv.firstElementChild;
+  guia.style.opacity = 1;
+
+  quadroWrapper.appendChild(canvas);
+  quadroWrapper.appendChild(guia);
+  stageCanvas.appendChild(quadroWrapper);
+
+  const escala = window.devicePixelRatio || 1;
+  function ajustar(){
+    const rect = quadroWrapper.getBoundingClientRect();
+    canvas.width = rect.width * escala;
+    canvas.height = rect.height * escala;
+  }
+  ajustar();
+  const ctx = canvas.getContext('2d');
+  ctx.scale(escala, escala);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+  let pintando = false, ultimo = null, corAtual = CORES_PALETA[1], traços = 0;
+
+  function pos(ev){
+    const rect = canvas.getBoundingClientRect();
+    return { x: ev.clientX - rect.left, y: ev.clientY - rect.top };
+  }
+  function iniciar(ev){
+    pintando = true;
+    ultimo = pos(ev);
+    traços++;
+    // pinta um ponto mesmo com um simples clique
+    ctx.fillStyle = corAtual;
+    ctx.beginPath();
+    ctx.arc(ultimo.x, ultimo.y, 8, 0, Math.PI*2);
+    ctx.fill();
+  }
+  function mover(ev){
+    if(!pintando) return;
+    const p2 = pos(ev);
+    ctx.strokeStyle = corAtual;
+    ctx.lineWidth = 16;
+    ctx.beginPath();
+    ctx.moveTo(ultimo.x, ultimo.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.stroke();
+    ultimo = p2;
+  }
+  function parar(){ pintando = false; }
+
+  canvas.addEventListener('mousedown', iniciar);
+  canvas.addEventListener('mousemove', mover);
+  window.addEventListener('mouseup', parar);
+
+  const ferramentas = document.createElement('div');
+  ferramentas.className = 'ferramentas';
+  const paleta = document.createElement('div');
+  paleta.className = 'paleta';
+  CORES_PALETA.forEach((c,i)=>{
+    const bola = document.createElement('span');
+    bola.className = 'cor' + (i===1 ? ' selecionada':'');
+    bola.style.background = c;
+    bola.onclick = () => {
+      [...paleta.children].forEach(b=>b.classList.remove('selecionada'));
+      bola.classList.add('selecionada');
+      corAtual = c;
+    };
+    paleta.appendChild(bola);
+  });
+  ferramentas.appendChild(paleta);
+  stageCanvas.appendChild(ferramentas);
+
+  const botoes = document.createElement('div');
+  botoes.className = 'botoes';
+  const ultimaPalavra = idxPalavra === PALAVRAS.length - 1;
+  botoes.innerHTML = `
+    <button class="btn suave" id="btnLimpar">🧽 Limpar</button>
+    <button class="btn primario" id="btnContinuar">${ultimaPalavra ? 'Finalizar 🎉' : 'Próxima fase ➜'}</button>
+  `;
+  stageCanvas.appendChild(botoes);
+
+  document.getElementById('btnLimpar').onclick = () => ctx.clearRect(0,0,canvas.width,canvas.height);
+  document.getElementById('btnContinuar').onclick = () => {
+    if(traços > 0){
+      irParaProximaPalavra();
+    } else {
+      alert('Colora um pouquinho antes de continuar! 🎨');
+    }
+  };
+}
+
+/* ===================== RENDER FINAL ===================== */
+function renderizarFinal(){
+  stageEl.innerHTML = `
+    <div class="stage final">
+      <div class="confete">🎉🖍️📚🎉</div>
+      <h2>Parabéns!</h2>
+      <p class="instrucao">Você passou por todas as ${PALAVRAS.length} fases do caderninho: copiou e coloriu cada palavra!</p>
+      <div class="botoes">
+        <button class="btn primario" id="btnReiniciar">Começar de novo</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('btnReiniciar').onclick = () => {
+    idxPalavra = 0; idxEtapa = 0;
+    atualizarTrilhas();
+    renderizarEtapa();
+  };
+}
+
+/* ===================== ROTEADOR DE ETAPAS ===================== */
+function renderizarEtapa(){
+  const p = PALAVRAS[idxPalavra];
+  if(idxEtapa === 0) renderCopiar(p);
+  else if(idxEtapa === 1) renderVerDesenho(p);
+  else if(idxEtapa === 2) renderColorir(p);
+}
+
+if('speechSynthesis' in window){
+  window.speechSynthesis.onvoiceschanged = () => {};
+}
+
+atualizarTrilhas();
+renderizarEtapa();
+</script>
+</body>
+</html>
