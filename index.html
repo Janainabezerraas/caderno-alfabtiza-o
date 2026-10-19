@@ -1,578 +1,172 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Liga-Letras — Jogo de Alfabetização</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shhh! Não acorde o Bento</title>
 <style>
-  :root{
-    --sky-top:#BFEBFF;
-    --sky-bottom:#FFF3D6;
-    --ink:#2B3A55;
-    --sun:#FFC93C;
-    --sun-dark:#F2A900;
-    --success:#3FC380;
-    --error:#FF6B6B;
-    --coral:#FF8A65;
-    --teal:#2EC4B6;
-    --purple:#9B6EF3;
-    --blue:#4C9AFF;
-    --card:#FFFDF7;
-  }
-  *{box-sizing:border-box;}
-  html,body{height:100%;}
-  body{
-    margin:0;
-    min-height:100vh;
-    font-family:'Fredoka', system-ui, sans-serif;
-    color:var(--ink);
-    background:linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 100%);
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    padding:24px 16px 60px;
-    overflow-x:hidden;
-  }
-
-  /* soft floating clouds in the background */
-  .cloud{
-    position:fixed;
-    background:#fff;
-    opacity:.55;
-    border-radius:50%;
-    filter:blur(1px);
-    z-index:0;
-  }
-
-  header{
-    text-align:center;
-    max-width:560px;
-    z-index:1;
-  }
-  h1{
-    font-size:clamp(28px,5vw,40px);
-    font-weight:700;
-    margin:0 0 6px;
-    letter-spacing:.5px;
-  }
-  h1 span{color:var(--sun-dark);}
-  p.instructions{
-    margin:0 0 18px;
-    font-size:clamp(15px,2.4vw,18px);
-    font-weight:500;
-    color:#4A5A78;
-  }
-
-  .letter-picker{
-    display:flex;
-    gap:8px;
-    flex-wrap:wrap;
-    justify-content:center;
-    max-width:640px;
-    margin-bottom:22px;
-    z-index:1;
-  }
-  .letter-chip{
-    font-family:inherit;
-    font-weight:600;
-    font-size:18px;
-    width:42px;
-    height:42px;
-    border-radius:14px;
-    border:2px solid #fff;
-    background:#ffffffb0;
-    color:var(--ink);
-    cursor:pointer;
-    transition:transform .15s ease, background .15s ease;
-  }
-  .letter-chip:hover{transform:translateY(-2px);}
-  .letter-chip.active{
-    background:var(--sun);
-    border-color:var(--sun-dark);
-    box-shadow:0 4px 0 var(--sun-dark);
-    transform:translateY(-2px);
-  }
-
-  .score-row{
-    display:flex;
-    align-items:center;
-    gap:14px;
-    margin-bottom:14px;
-    font-weight:600;
-    font-size:16px;
-    z-index:1;
-  }
-  .score-pill{
-    background:#ffffffcc;
-    padding:6px 14px;
-    border-radius:999px;
-    border:2px solid #fff;
-  }
-
-  #playfield-wrap{
-    position:relative;
-    width:min(94vw, 560px);
-    aspect-ratio:1/1;
-    z-index:1;
-  }
-  #playfield{
-    position:absolute;
-    inset:0;
-  }
-  #lines-svg{
-    position:absolute;
-    inset:0;
-    width:100%;
-    height:100%;
-    pointer-events:none;
-    overflow:visible;
-  }
-  #lines-svg line{
-    stroke:var(--success);
-    stroke-width:6;
-    stroke-linecap:round;
-    opacity:0;
-    transition:opacity .25s ease;
-  }
-  #lines-svg line.show{opacity:1;}
-
-  .center-letter{
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    width:22%;
-    aspect-ratio:1/1;
-    min-width:84px;
-    min-height:84px;
-    border-radius:50%;
-    background:radial-gradient(circle at 35% 30%, #FFE58A, var(--sun) 70%);
-    border:5px solid var(--sun-dark);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:clamp(38px,8vw,64px);
-    font-weight:700;
-    color:#7A4A00;
-    box-shadow:0 6px 0 var(--sun-dark);
-    z-index:3;
-    user-select:none;
-  }
-  .center-letter.pulse{ animation:pulse .5s ease; }
-  @keyframes pulse{
-    0%{transform:translate(-50%,-50%) scale(1);}
-    40%{transform:translate(-50%,-50%) scale(1.12);}
-    100%{transform:translate(-50%,-50%) scale(1);}
-  }
-
-  .word-bubble{
-    position:absolute;
-    transform:translate(-50%,-50%);
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:2px;
-    width:104px;
-    height:88px;
-    border-radius:46% 54% 52% 48%/54% 44% 56% 46%;
-    background:var(--card);
-    border:4px solid var(--bubble-color, var(--blue));
-    font-family:inherit;
-    font-weight:600;
-    font-size:15px;
-    color:var(--ink);
-    cursor:pointer;
-    z-index:2;
-    transition:transform .15s ease, background .2s ease, border-color .2s ease;
-  }
-  .word-bubble .emoji{font-size:26px; line-height:1;}
-  .word-bubble:hover{transform:translate(-50%,-50%) scale(1.06);}
-  .word-bubble.correct{
-    background:#E4FBEF;
-    border-color:var(--success);
-    cursor:default;
-    pointer-events:none;
-  }
-  .word-bubble.correct::after{
-    content:"✓";
-    position:absolute;
-    top:-10px;
-    right:-6px;
-    background:var(--success);
-    color:#fff;
-    width:26px;
-    height:26px;
-    border-radius:50%;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:15px;
-    border:2px solid #fff;
-  }
-  .word-bubble.wrong{
-    animation:shake .4s ease;
-    border-color:var(--error);
-    background:#FFEDEC;
-  }
-  @keyframes shake{
-    0%,100%{transform:translate(-50%,-50%) rotate(0);}
-    20%{transform:translate(-50%,-50%) rotate(-8deg);}
-    40%{transform:translate(-50%,-50%) rotate(8deg);}
-    60%{transform:translate(-50%,-50%) rotate(-6deg);}
-    80%{transform:translate(-50%,-50%) rotate(6deg);}
-  }
-
-  #celebrate-overlay{
-    position:fixed;
-    inset:0;
-    background:rgba(43,58,85,.55);
-    display:none;
-    align-items:center;
-    justify-content:center;
-    z-index:10;
-  }
-  #celebrate-overlay.show{display:flex;}
-  .celebrate-card{
-    background:var(--card);
-    border-radius:32px;
-    padding:36px 32px;
-    text-align:center;
-    max-width:340px;
-    box-shadow:0 10px 0 #E8DFC7;
-    position:relative;
-    overflow:hidden;
-  }
-  .celebrate-card h2{margin:6px 0 4px; font-size:26px;}
-  .celebrate-card p{margin:0 0 20px; color:#4A5A78; font-weight:500;}
-  .big-emoji{font-size:56px;}
-  .next-btn{
-    font-family:inherit;
-    font-weight:700;
-    font-size:16px;
-    padding:12px 26px;
-    border-radius:16px;
-    border:none;
-    background:var(--success);
-    color:#fff;
-    cursor:pointer;
-    box-shadow:0 4px 0 #29976A;
-  }
-  .next-btn:active{transform:translateY(3px); box-shadow:none;}
-
-  .confetto{
-    position:absolute;
-    top:-10px;
-    width:10px;
-    height:14px;
-    opacity:.9;
-    animation:fall linear forwards;
-  }
-  @keyframes fall{
-    to{ transform:translateY(320px) rotate(360deg); opacity:0; }
-  }
-
-  @media (prefers-reduced-motion: reduce){
-    *{animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important;}
-  }
-
-  footer{
-    margin-top:26px;
-    font-size:13px;
-    color:#5C6E8C;
-    z-index:1;
-    text-align:center;
-  }
+:root{
+  --bg:#1b2150; --bg2:#2c3a7a; --ink:#f4efe6; --muted:#aab3e0; --moon:#ffe9a8;
+  --ok:#7fd6a8; --warn:#ffd36b; --bad:#ff7a7a; --card:rgba(255,255,255,.08);
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b2150;--bg2:#2c3a7a}}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100%;background:linear-gradient(180deg,var(--bg),var(--bg2));color:var(--ink);
+  font-family:"Fredoka","Trebuchet MS",system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;overflow-x:hidden}
+.stars{position:fixed;inset:0;pointer-events:none}
+.stars i{position:absolute;width:3px;height:3px;border-radius:50%;background:#fff;opacity:.6;animation:tw 3s infinite ease-in-out}
+@keyframes tw{50%{opacity:.1}}
+.moon{position:fixed;top:calc(16px + env(safe-area-inset-top,0px));right:20px;width:54px;height:54px;border-radius:50%;
+  background:var(--moon);box-shadow:inset -14px -4px 0 0 #e8c86d,0 0 40px rgba(255,233,168,.5)}
+h1{font-size:clamp(22px,5vw,34px);margin:22px 16px 4px;text-align:center;font-weight:600}
+.sub{margin:0 16px;color:var(--muted);text-align:center;max-width:440px}
+#stage{position:relative;width:min(92vw,460px);margin-top:8px}
+svg{width:100%;height:auto;display:block}
+.zzz{font-weight:700;fill:var(--ink);opacity:0}
+.sleeping .zzz{animation:z 3s infinite}
+.sleeping .z2{animation-delay:1s}.sleeping .z3{animation-delay:2s}
+@keyframes z{0%{opacity:0;transform:translate(0,10px)}30%{opacity:1}100%{opacity:0;transform:translate(14px,-34px)}}
+#chest{transform-origin:230px 230px;animation:br 3.4s infinite ease-in-out}
+@keyframes br{50%{transform:scaleY(1.05) scaleX(1.02)}}
+.eyes-open,.mouth-o,.mouth-sad{display:none}
+.stirring .eyes-closed{display:none}.stirring .eyes-half{display:block}
+.awake .eyes-closed,.awake .eyes-half{display:none}.awake .eyes-open,.awake .mouth-o{display:block}
+.awake .mouth-z,.stirring .mouth-z{display:none}.stirring .mouth-z2{display:block}
+.mouth-z2{display:none}
+.eyes-half{display:none}
+.awake #baby{animation:shake .25s infinite}
+@keyframes shake{25%{transform:translate(-3px,0)}75%{transform:translate(3px,0)}}
+.stirring #baby{animation:stir 1s infinite}
+@keyframes stir{50%{transform:rotate(-1.5deg)}}
+#meter{width:min(86vw,420px);height:26px;border-radius:14px;background:var(--card);overflow:hidden;margin-top:6px;position:relative}
+#bar{height:100%;width:0;background:var(--ok);border-radius:14px;transition:width .08s,background .2s}
+#status{margin:10px 16px 0;font-size:20px;min-height:30px;text-align:center}
+.row{display:flex;gap:14px;margin:14px 0 6px;flex-wrap:wrap;justify-content:center}
+.pill{background:var(--card);padding:8px 16px;border-radius:20px;font-size:17px}
+button{font:inherit;font-size:20px;font-weight:600;border:0;border-radius:28px;padding:14px 30px;margin:10px 6px;
+  background:var(--moon);color:#2a2340;cursor:pointer;min-height:52px}
+button:focus-visible{outline:3px solid #fff;outline-offset:3px}
+button.ghost{background:var(--card);color:var(--ink)}
+.sens{display:flex;align-items:center;gap:10px;color:var(--muted);margin-bottom:24px}
+.sens input{width:150px}
+#msg{color:var(--bad);max-width:420px;text-align:center;margin:6px 16px}
+@media (prefers-reduced-motion:reduce){.stars i{animation:none}}
 </style>
 </head>
 <body>
+<div class="stars" id="stars"></div><div class="moon"></div>
+<h1>Shhh! Não acorde o Bento</h1>
+<p class="sub">O microfone escuta o tempo todo. Fiquem quietinhos para ele dormir!</p>
 
-<header>
-  <h1>Liga-<span>Letras</span></h1>
-  <p class="instructions">Toque na letra para escolher, depois ligue todas as palavras que começam com ela!</p>
-</header>
-
-<div class="letter-picker" id="letterPicker"></div>
-
-<div class="score-row">
-  <div class="score-pill" id="progressPill">0 de 0 encontradas</div>
-  <div class="score-pill" id="scorePill">⭐ 0</div>
+<div id="stage" class="sleeping">
+<svg viewBox="0 0 460 340" role="img" aria-label="Bebê dormindo na cama">
+  <rect x="20" y="250" width="420" height="60" rx="22" fill="#5a4a9a"/>
+  <rect x="20" y="236" width="420" height="40" rx="20" fill="#8e7bd6"/>
+  <ellipse cx="130" cy="220" rx="90" ry="38" fill="#f4efe6"/>
+  <g id="baby">
+    <circle cx="140" cy="190" r="62" fill="#ffd9b8"/>
+    <path d="M100 150q40-34 80 0q-10-4-40-4t-40 4z" fill="#7a4b2a"/>
+    <circle cx="86" cy="196" r="9" fill="#ffd9b8"/><circle cx="194" cy="196" r="9" fill="#ffd9b8"/>
+    <circle cx="112" cy="208" r="9" fill="#ffaaa0" opacity=".6"/><circle cx="168" cy="208" r="9" fill="#ffaaa0" opacity=".6"/>
+    <g class="eyes-closed" stroke="#3b2a20" stroke-width="4" fill="none" stroke-linecap="round">
+      <path d="M112 188q10 9 20 0"/><path d="M148 188q10 9 20 0"/></g>
+    <g class="eyes-half" stroke="#3b2a20" stroke-width="4" fill="none" stroke-linecap="round">
+      <path d="M112 190h20"/><path d="M148 190h20"/><circle cx="122" cy="194" r="3" fill="#3b2a20"/><circle cx="158" cy="194" r="3" fill="#3b2a20"/></g>
+    <g class="eyes-open"><circle cx="122" cy="188" r="11" fill="#fff"/><circle cx="158" cy="188" r="11" fill="#fff"/>
+      <circle cx="122" cy="190" r="6" fill="#3b2a20"/><circle cx="158" cy="190" r="6" fill="#3b2a20"/>
+      <path d="M108 170l22 6M172 170l-22 6" stroke="#3b2a20" stroke-width="4" stroke-linecap="round"/></g>
+    <path class="mouth-z" d="M130 218q10 6 20 0" stroke="#3b2a20" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <path class="mouth-z2" d="M132 220q8-4 16 0" stroke="#3b2a20" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <ellipse class="mouth-o" cx="140" cy="222" rx="13" ry="16" fill="#8a2a2a"/>
+  </g>
+  <g id="chest"><path d="M190 232q40-36 150-10l60 8v44H190z" fill="#4fa3d9"/>
+    <path d="M230 236q30 10 60 0M300 244q30 10 60 0" stroke="#3a86b8" stroke-width="5" fill="none" stroke-linecap="round"/></g>
+  <text class="zzz z1" x="215" y="150" font-size="34">Z</text>
+  <text class="zzz z2" x="245" y="125" font-size="26">z</text>
+  <text class="zzz z3" x="270" y="105" font-size="20">z</text>
+</svg>
 </div>
 
-<div id="playfield-wrap">
-  <svg id="lines-svg"></svg>
-  <div id="playfield">
-    <div class="center-letter" id="centerLetter">A</div>
-  </div>
-</div>
-
-<footer>Toque nas palavras certas para ligá-las à letra do meio 🎈</footer>
-
-<div id="celebrate-overlay">
-  <div class="celebrate-card">
-    <div class="big-emoji">🎉</div>
-    <h2>Muito bem!</h2>
-    <p>Você ligou todas as palavras certas!</p>
-    <button class="next-btn" id="nextBtn">Próxima letra</button>
-  </div>
-</div>
+<div id="meter" aria-hidden="true"><div id="bar"></div></div>
+<div id="status" role="status" aria-live="polite">Toque em começar</div>
+<div class="row"><div class="pill">Tempo dormindo: <b id="time">0s</b></div><div class="pill">Recorde: <b id="best">0s</b></div></div>
+<div id="msg"></div>
+<button id="go">Começar</button>
+<div class="sens"><label for="sens">Sensibilidade</label><input id="sens" type="range" min="1" max="10" value="5"></div>
 
 <script>
-const BUBBLE_COLORS = ['#FF8A65','#2EC4B6','#9B6EF3','#4C9AFF','#F4A300','#FF6B9D'];
+const $=id=>document.getElementById(id);
+const stage=$('stage'),bar=$('bar'),status=$('status'),msg=$('msg');
+for(let i=0;i<40;i++){const s=document.createElement('i');s.style.left=Math.random()*100+'%';s.style.top=Math.random()*100+'%';
+  s.style.animationDelay=Math.random()*3+'s';$('stars').appendChild(s)}
+let ctx,analyser,data,stream,running=false,level=0,state='sleeping',sleepStart=0,best=0,calm=0,awakeAt=0,raf;
+let best0=0;try{best0=+localStorage.getItem('bento-best')||0}catch(e){}
+best=best0;$('best').textContent=best+'s';
 
-const BANK = {
-  A: { correct:[['Abelha','🐝'],['Amora','🫐'],['Anel','💍'],['Aranha','🕷️']],
-       distract:[['Bola','⚽'],['Casa','🏠'],['Dado','🎲'],['Gato','🐱']] },
-  B: { correct:[['Bola','⚽'],['Boneca','🪆'],['Banana','🍌'],['Barco','⛵']],
-       distract:[['Casa','🏠'],['Elefante','🐘'],['Foca','🦭'],['Maçã','🍎']] },
-  C: { correct:[['Casa','🏠'],['Cavalo','🐴'],['Copo','🥤'],['Coelho','🐰']],
-       distract:[['Dado','🎲'],['Rato','🐭'],['Lua','🌙'],['Peixe','🐟']] },
-  D: { correct:[['Dado','🎲'],['Dedo','👆'],['Doce','🍬'],['Dinossauro','🦖']],
-       distract:[['Gato','🐱'],['Foca','🦭'],['Rato','🐭'],['Vaca','🐄']] },
-  F: { correct:[['Foca','🦭'],['Flor','🌸'],['Faca','🔪'],['Foguete','🚀']],
-       distract:[['Casa','🏠'],['Lua','🌙'],['Rato','🐭'],['Sol','☀️']] },
-  G: { correct:[['Gato','🐱'],['Girafa','🦒'],['Galinha','🐔'],['Guarda-chuva','☂️']],
-       distract:[['Bola','⚽'],['Rato','🐭'],['Sol','☀️'],['Vaca','🐄']] },
-  L: { correct:[['Lua','🌙'],['Livro','📖'],['Leão','🦁'],['Limão','🍋']],
-       distract:[['Casa','🏠'],['Pato','🦆'],['Foca','🦭'],['Rato','🐭']] },
-  M: { correct:[['Maçã','🍎'],['Macaco','🐒'],['Mesa','🪑'],['Moto','🏍️']],
-       distract:[['Bola','⚽'],['Casa','🏠'],['Rato','🐭'],['Sol','☀️']] },
-  P: { correct:[['Pato','🦆'],['Peixe','🐟'],['Pipoca','🍿'],['Panela','🍳']],
-       distract:[['Casa','🏠'],['Lua','🌙'],['Rato','🐭'],['Foca','🦭']] },
-  S: { correct:[['Sol','☀️'],['Sapo','🐸'],['Sorvete','🍦'],['Sapato','👟']],
-       distract:[['Bola','⚽'],['Lua','🌙'],['Rato','🐭'],['Casa','🏠']] },
-  T: { correct:[['Tartaruga','🐢'],['Tigre','🐯'],['Tomate','🍅'],['Tesoura','✂️']],
-       distract:[['Casa','🏠'],['Lua','🌙'],['Foca','🦭'],['Rato','🐭']] },
-  V: { correct:[['Vaca','🐄'],['Vassoura','🧹'],['Vestido','👗'],['Violão','🎸']],
-       distract:[['Casa','🏠'],['Foca','🦭'],['Rato','🐭'],['Sol','☀️']] },
-};
-
-const LETTERS = Object.keys(BANK);
-let currentLetter = null;
-let foundCount = 0;
-let totalCorrect = 0;
-let score = 0;
-
-const playfieldWrap = document.getElementById('playfield-wrap');
-const playfield = document.getElementById('playfield');
-const centerLetterEl = document.getElementById('centerLetter');
-const svg = document.getElementById('lines-svg');
-const letterPicker = document.getElementById('letterPicker');
-const progressPill = document.getElementById('progressPill');
-const scorePill = document.getElementById('scorePill');
-const celebrateOverlay = document.getElementById('celebrate-overlay');
-const nextBtn = document.getElementById('nextBtn');
-
-function normalizeFirstLetter(word){
-  return word.charAt(0)
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .toUpperCase();
-}
-
-function shuffle(arr){
-  const a = arr.slice();
-  for(let i=a.length-1;i>0;i--){
-    const j = Math.floor(Math.random()*(i+1));
-    [a[i],a[j]]=[a[j],a[i]];
+function setState(s){
+  if(s===state)return;state=s;
+  stage.className=s;
+  if(s==='sleeping'){sleepStart=performance.now();status.textContent='Zzz... dormindo 😴'}
+  if(s==='stirring'){status.textContent='Ele está se mexendo... shhh! 🤫'}
+  if(s==='awake'){
+    const secs=Math.floor((performance.now()-sleepStart)/1000);
+    if(secs>best){best=secs;$('best').textContent=best+'s';try{localStorage.setItem('bento-best',best)}catch(e){}}
+    status.textContent='Acordou! Buááá 😭 Fiquem quietos para ele voltar a dormir';
+    awakeAt=performance.now();calm=0;
   }
-  return a;
 }
-
-function buildLetterPicker(){
-  letterPicker.innerHTML = '';
-  LETTERS.forEach(l=>{
-    const btn = document.createElement('button');
-    btn.className = 'letter-chip';
-    btn.textContent = l;
-    btn.addEventListener('click', ()=> startRound(l));
-    letterPicker.appendChild(btn);
-  });
+function tick(){
+  analyser.getByteTimeDomainData(data);
+  let sum=0;for(const v of data){const d=(v-128)/128;sum+=d*d}
+  const rms=Math.sqrt(sum/data.length);
+  // suaviza: sobe rápido, desce devagar
+  level=rms>level?rms:level*0.92+rms*0.08;
+  const sens=+$('sens').value;
+  const t=0.22-sens*0.018;            // limite de barulho (menor = mais sensível)
+  const pct=Math.min(1,level/(t*1.6));
+  bar.style.width=(pct*100)+'%';
+  bar.style.background=level<t*.5?'var(--ok)':level<t?'var(--warn)':'var(--bad)';
+  const now=performance.now();
+  if(state==='sleeping'){
+    if(level>t*1.1){awakeStart=now;setState('awake')}
+    else if(level>t*.7){setState('stirring')}
+    $('time').textContent=Math.floor((now-sleepStart)/1000)+'s';
+  }else if(state==='stirring'){
+    if(level>t*1.1)setState('awake');
+    else if(level<t*.45){calm+=1;if(calm>40){calm=0;setState('sleeping')}}else calm=0;
+    $('time').textContent=Math.floor((now-sleepStart)/1000)+'s';
+  }else{ // awake: precisa de ~3s de silêncio
+    if(level<t*.45){calm+=1;if(calm>180){calm=0;setState('sleeping')}}else calm=0;
+  }
+  raf=requestAnimationFrame(tick);
 }
-
-function setActiveChip(letter){
-  [...letterPicker.children].forEach(chip=>{
-    chip.classList.toggle('active', chip.textContent === letter);
-  });
-}
-
-function playTone(freqs, duration=0.12){
+async function start(){
+  msg.textContent='';
   try{
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    let t = ctx.currentTime;
-    freqs.forEach(f=>{
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = f;
-      gain.gain.setValueAtTime(0.15, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t+duration);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(t);
-      osc.stop(t+duration);
-      t += duration*0.8;
-    });
-  }catch(e){ /* audio not available, ignore */ }
-}
-
-function startRound(letter){
-  currentLetter = letter;
-  foundCount = 0;
-  centerLetterEl.textContent = letter;
-  centerLetterEl.classList.remove('pulse');
-  void centerLetterEl.offsetWidth;
-  centerLetterEl.classList.add('pulse');
-  setActiveChip(letter);
-
-  // clear previous bubbles/lines
-  playfield.querySelectorAll('.word-bubble').forEach(b=>b.remove());
-  svg.innerHTML = '';
-
-  const data = BANK[letter];
-  const correctWords = data.correct.map(([w,e])=>({word:w, emoji:e, correct:true}));
-  const distractWords = shuffle(data.distract).slice(0,4).map(([w,e])=>({word:w, emoji:e, correct:false}));
-  totalCorrect = correctWords.length;
-
-  const allWords = shuffle([...correctWords, ...distractWords]);
-  progressPill.textContent = `0 de ${totalCorrect} encontradas`;
-
-  const n = allWords.length;
-  allWords.forEach((item, i)=>{
-    const bubble = document.createElement('div');
-    bubble.className = 'word-bubble';
-    bubble.style.setProperty('--bubble-color', BUBBLE_COLORS[i % BUBBLE_COLORS.length]);
-    bubble.innerHTML = `<span class="emoji">${item.emoji}</span><span>${item.word}</span>`;
-    bubble.dataset.word = item.word;
-    bubble.dataset.correct = item.correct ? '1':'0';
-
-    const angle = (i * (360/n) - 90) * Math.PI/180;
-    playfield.appendChild(bubble);
-    positionBubble(bubble, angle);
-
-    bubble.addEventListener('click', ()=> handleBubbleClick(bubble));
-  });
-}
-
-function positionBubble(bubble, angle){
-  const rect = playfieldWrap.getBoundingClientRect();
-  const radius = rect.width * 0.37;
-  const cx = rect.width/2;
-  const cy = rect.height/2;
-  const x = cx + radius * Math.cos(angle);
-  const y = cy + radius * Math.sin(angle);
-  bubble.style.left = x + 'px';
-  bubble.style.top = y + 'px';
-  bubble.dataset.angle = angle;
-}
-
-function handleBubbleClick(bubble){
-  if(bubble.classList.contains('correct')) return;
-  const isCorrect = bubble.dataset.correct === '1';
-
-  if(isCorrect){
-    bubble.classList.add('correct');
-    drawLine(bubble);
-    foundCount++;
-    score += 10;
-    progressPill.textContent = `${foundCount} de ${totalCorrect} encontradas`;
-    scorePill.textContent = `⭐ ${score}`;
-    playTone([523.25, 659.25, 783.99]);
-    if(foundCount === totalCorrect){
-      setTimeout(showCelebration, 400);
-    }
-  } else {
-    bubble.classList.remove('wrong');
-    void bubble.offsetWidth;
-    bubble.classList.add('wrong');
-    playTone([180, 140]);
-    setTimeout(()=> bubble.classList.remove('wrong'), 450);
+    stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+  }catch(e){
+    msg.textContent='Não consegui acessar o microfone. Permita o acesso no navegador e tente de novo (a página precisa estar em https).';
+    return;
   }
+  ctx=new (window.AudioContext||window.webkitAudioContext)();
+  await ctx.resume();
+  const src=ctx.createMediaStreamSource(stream);
+  analyser=ctx.createAnalyser();analyser.fftSize=1024;data=new Uint8Array(analyser.fftSize);
+  src.connect(analyser);
+  running=true;$('go').textContent='Parar';$('go').classList.add('ghost');
+  state='';setState('sleeping');
+  raf=requestAnimationFrame(tick);
 }
-
-function drawLine(bubble){
-  const wrapRect = playfieldWrap.getBoundingClientRect();
-  const cRect = centerLetterEl.getBoundingClientRect();
-  const bRect = bubble.getBoundingClientRect();
-
-  const x1 = cRect.left + cRect.width/2 - wrapRect.left;
-  const y1 = cRect.top + cRect.height/2 - wrapRect.top;
-  const x2 = bRect.left + bRect.width/2 - wrapRect.left;
-  const y2 = bRect.top + bRect.height/2 - wrapRect.top;
-
-  const line = document.createElementNS('http://www.w3.org/2000/svg','line');
-  line.setAttribute('x1', x1);
-  line.setAttribute('y1', y1);
-  line.setAttribute('x2', x2);
-  line.setAttribute('y2', y2);
-  line.dataset.word = bubble.dataset.word;
-  svg.appendChild(line);
-  requestAnimationFrame(()=> line.classList.add('show'));
+function stop(){
+  running=false;cancelAnimationFrame(raf);
+  stream&&stream.getTracks().forEach(t=>t.stop());ctx&&ctx.close();
+  bar.style.width='0';stage.className='sleeping';state='sleeping';
+  status.textContent='Toque em começar';$('go').textContent='Começar';$('go').classList.remove('ghost');
 }
-
-function redrawAllLines(){
-  // reposition bubbles that already exist, then redraw correct lines
-  playfield.querySelectorAll('.word-bubble').forEach(bubble=>{
-    positionBubble(bubble, parseFloat(bubble.dataset.angle));
-  });
-  const correctBubbles = [...playfield.querySelectorAll('.word-bubble.correct')];
-  svg.innerHTML = '';
-  correctBubbles.forEach(b=> drawLine(b));
-}
-
-let resizeTimer;
-window.addEventListener('resize', ()=>{
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(redrawAllLines, 120);
-});
-
-function showCelebration(){
-  celebrateOverlay.classList.add('show');
-  spawnConfetti();
-  playTone([523.25, 659.25, 783.99, 1046.5], 0.16);
-}
-
-function spawnConfetti(){
-  const card = document.querySelector('.celebrate-card');
-  const colors = BUBBLE_COLORS;
-  for(let i=0;i<24;i++){
-    const c = document.createElement('div');
-    c.className = 'confetto';
-    c.style.left = Math.random()*100 + '%';
-    c.style.background = colors[i % colors.length];
-    c.style.animationDuration = (1 + Math.random()*0.8) + 's';
-    c.style.animationDelay = (Math.random()*0.3) + 's';
-    card.appendChild(c);
-    setTimeout(()=> c.remove(), 2000);
-  }
-}
-
-nextBtn.addEventListener('click', ()=>{
-  celebrateOverlay.classList.remove('show');
-  let next = currentLetter;
-  while(next === currentLetter){
-    next = LETTERS[Math.floor(Math.random()*LETTERS.length)];
-  }
-  startRound(next);
-});
-
-function spawnClouds(){
-  const sizes = [90,140,110,70,160];
-  sizes.forEach((s,i)=>{
-    const cloud = document.createElement('div');
-    cloud.className = 'cloud';
-    cloud.style.width = s+'px';
-    cloud.style.height = (s*0.6)+'px';
-    cloud.style.top = (Math.random()*70)+'%';
-    cloud.style.left = (Math.random()*90)+'%';
-    document.body.appendChild(cloud);
-  });
-}
-
-buildLetterPicker();
-spawnClouds();
-startRound(LETTERS[Math.floor(Math.random()*LETTERS.length)]);
+$('go').onclick=()=>running?stop():start();
+document.addEventListener('visibilitychange',()=>{if(running&&ctx&&ctx.state==='suspended')ctx.resume()});
 </script>
 </body>
 </html>
